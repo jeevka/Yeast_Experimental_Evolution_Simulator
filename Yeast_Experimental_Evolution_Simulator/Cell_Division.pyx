@@ -183,7 +183,7 @@ cdef sampling_individuals(genotypes,int n_individuals,int i,PM1,n_BN):
 ##############################################################################################
 cdef calculate_LSC(mean_CDT):
         LSC = (math.log(180/60) - math.log(mean_CDT/60))/2
-        LSC = LSC/0.5493061443340549        
+        LSC = LSC/0.3465735902799727        
         
         return LSC
         
