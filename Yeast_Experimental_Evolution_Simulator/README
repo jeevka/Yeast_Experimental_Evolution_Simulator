@@ -1,0 +1,14 @@
+To compile and run the simulations execute the command below in terminal from where the codes are located.
+
+sh Yeast_Simulator.sh
+
+To change the parameters you can edit line number 9 in "Yeast_Simulator.sh" file. 
+
+-m mutations rate per genome per cell division
+-s shape value for gamma distribution
+-l scale value for gamma distribution
+-f proportion of fitness affecting mutations
+-b proportion of beneficial mutations in fitness affecting mutation
+
+R code will plot the outputs.
+
