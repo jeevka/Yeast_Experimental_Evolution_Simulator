@@ -13,14 +13,3 @@ setup(
     ext_modules = [Extension("Cell_Division", ["Cell_Division.pyx"], include_dirs =[ np. get_include ()])]
 )
 
-
-setup(
-    cmdclass = {'build_ext': build_ext},
-    ext_modules = [Extension("Sub_Functions", ["Sub_Functions.pyx"], include_dirs =[ np. get_include ()])]
-)
-
-setup(
-    cmdclass = {'build_ext': build_ext},
-    ext_modules = [Extension("Mutations", ["Mutations.pyx"], include_dirs =[ np. get_include ()])]
-)
-
