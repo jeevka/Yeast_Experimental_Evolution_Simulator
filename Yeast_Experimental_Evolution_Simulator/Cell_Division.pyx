@@ -10,7 +10,16 @@ cimport numpy as np
 cimport cython
 import gc
 import re  
-
+"""
+This module memics the mitotic cell division of haploid Yeast cells.
+Cells divide and increase in number. During each cell divison, cells
+may get mutations based on the given mutation rate. After certain generations,
+whole population will go thourgh a bottlenecl where we randomly choose N cells
+and restart the whole cycle again.
+E.g. Initial popilation (N) = 1000. After five mitotic division, the whole population
+will be 32000. Then, 1000 cells wil be chosen randomly the selected cells are allwed to grow
+for another 5 generartions. THis whole cycle will repeated number of times.
+"""
 ##############################################################################################
 ################################ User Defined modules ########################################
 ##############################################################################################
@@ -28,7 +37,7 @@ cdef extern from "stdlib.h":
 # Each cell divides at differnt speed. 
 ##############################################################################################
 @cython.boundscheck(False)
-def asymmetrical_cell_division(genotypes,cell_groups,PM_fitness,PM,n_generations,n_BN,n_individuals,n_mut,s_size,dps,FAMR,mutation_fitness,mutation_rate,BMR,cell_max_age):
+def asymmetrical_cell_division(genotypes,cell_groups,PM_fitness,PM,n_generations,n_BN,n_individuals,n_mut,dps,FAMR,mutation_fitness,mutation_rate,BMR,cell_max_age):
 
     # Output File for Mutation Frequency
     Mut_Freq = open("Mutation_Freq.csv","w")
@@ -99,7 +108,7 @@ def asymmetrical_cell_division(genotypes,cell_groups,PM_fitness,PM,n_generations
             calculate_mutation_frequencies(PM,i,n_individuals,Mut_Freq,Mean_Mut)
 
         else:
-            (genotypes1,cell_groups,PM) = sampling_individuals(genotypes,s_size,i,PM,n_BN)
+            (genotypes1,cell_groups,PM) = sampling_individuals(genotypes,n_individuals,i,PM,n_BN)
 
             # Fixation analysis: The conditon is to avoid unnecessary fixation calculation where its not needed.
             # Because, Fixation calculation is one of the heavy and time consuming process.
@@ -122,7 +131,18 @@ def asymmetrical_cell_division(genotypes,cell_groups,PM_fitness,PM,n_generations
 # Random Sampling the desired number of individuals after certain number of generations.
 #################################################################################################
 cdef sampling_individuals(genotypes,int n_individuals,int i,PM1,n_BN):
-        
+    """
+    During serial transfers, N number of cells are chosen randomly.
+    At the same time mean cell division time of the whole population is calculated
+    
+    Input:
+        Dictionary of lists with cell properties(e.g. cell division time)
+        Serial transfer number
+        Number of individuals
+    
+    Output:
+        Mean cell division time of the population after random sampling
+    """
     # Making the Point mutation and gene duplication Dict of list
     size = len(genotypes)
     size = n_individuals * (2**5)
@@ -140,7 +160,7 @@ cdef sampling_individuals(genotypes,int n_individuals,int i,PM1,n_BN):
     sampled_group = ones((size,4),dtype=int32)
     
     cell_mutations_temp = []
-    cell_gene_duplications_temp = []
+        cell_gene_duplications_temp = []
     cell_groups = {}
 
     # Choosing the sampled individuals.
@@ -182,6 +202,15 @@ cdef sampling_individuals(genotypes,int n_individuals,int i,PM1,n_BN):
 # relative to WT cells growing in Normal conditions 
 ##############################################################################################
 cdef calculate_LSC(mean_CDT):
+        """
+        Input:
+            Mean cell division time of a population
+        
+        Output:
+            Growth rate relative to WT cell growing in normal growth media
+        """
+        
+        # For Below formula refer to Jonas Warringer's paper.
         LSC = (math.log(180/60) - math.log(mean_CDT/60))/2
         LSC = LSC/0.3465735902799727        
         
@@ -191,6 +220,13 @@ cdef calculate_LSC(mean_CDT):
 # This function calculates Frequency of mutations after very bottlenecks
 ##############################################################################################
 cdef calculate_mutation_frequencies(PM,N_BN,N,Mut_Freq,Mean_Mut):
+    """
+    Input:
+        Mutation profiles of each cell in the population
+    
+    Output:
+        Mutation frequency of each mutation appeared in simulation        
+    """
     Freq = {}
     N_mut = 0
     
@@ -228,16 +264,33 @@ cdef calculate_mutation_frequencies(PM,N_BN,N,Mut_Freq,Mean_Mut):
 # To update the next cell division time.
 ###############################################################################################
 cdef inline update_next_CDT(int a1, int a2, int b1, int b2):
+     """
+     Input:
+        Current cell divison time
+     Output:
+        New cell division time after the mutation
+     """
      a1 = a1 + a2
      b1 = b1 + b2
      return a1,b1
 
 ###############################################################################################
-# To group the cels
+# To group the cels: Cells which are dividing at "identical" cell division time will be in
+# one group. The Cell ids are stored under same id if they have cell divison times are identical
+# E.g. {180: [10,15,25,100]} 180 is the cell division time. 10,15,25 and 100 are cell ids.
+# When the clock is 180, all these cells will divide at the same time. 
 ###############################################################################################
 import heapq
 def group_the_cells(cell_groups,groups,P_cdt,C_cdt,k,tp):
-    
+    """
+    Input:
+        Cell groups
+        Parent's cell division time
+        Daughter's cell division time
+        Cell ids of parent and daughter
+    Output:
+        New Cell groups
+    """
     if P_cdt == C_cdt:               
         # Grouping the mother cells
         if cell_groups.has_key(P_cdt):
